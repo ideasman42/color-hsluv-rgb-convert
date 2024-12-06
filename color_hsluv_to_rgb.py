@@ -1,8 +1,10 @@
 # Originally from https://github.com/hsluv/hsluv-python/blob/master/hsluv.py (v5.0.3)
 
 __all__ = (
-    "hsluv_to_rgb",
+    "hsluv_from_hexcode",
     "hsluv_from_rgb",
+    "hsluv_to_hexcode",
+    "hsluv_to_rgb",
 )
 
 from math import (
@@ -15,10 +17,8 @@ from math import (
     pow as _pow,
 )
 
-from typing import (
-    List,
+from collections.abc import (
     Sequence,
-    Tuple,
 )
 
 _M = (
@@ -39,15 +39,15 @@ _KAPPA = 903.2962962
 _EPSILON = 0.0088564516
 
 
-def _length_of_ray_until_intersect(theta: float, line: Tuple[float, float]) -> float:
+def _length_of_ray_until_intersect(theta: float, line: tuple[float, float]) -> float:
     return line[1] / (_sin(theta) - line[0] * _cos(theta))
 
 
-def _get_bounds(l: float) -> List[Tuple[float, float]]:
+def _get_bounds(l: float) -> list[tuple[float, float]]:
     sub1 = _pow(l + 16.0, 3.0) / 1560896.0
     sub2 = sub1 if sub1 > _EPSILON else l / _KAPPA
     # Values are never used.
-    result: List[Tuple[float, float]] = [(0.0, 0.0)] * 6
+    result: list[tuple[float, float]] = [(0.0, 0.0)] * 6
     i = 0
     for m1, m2, m3 in _M:
         for t in range(2):
@@ -96,7 +96,7 @@ def _y_to_l(y: float) -> float:
     return (116.0 * _pow(y / _REF_Y, 1.0 / 3.0) - 16.0)
 
 
-def _xyz_to_rgb(x: float, y: float, z: float) -> Tuple[float, float, float]:
+def _xyz_to_rgb(x: float, y: float, z: float) -> tuple[float, float, float]:
     xyz = x, y, z
     return (
         _from_linear(_dot_product(_M[0], xyz)),
@@ -105,7 +105,7 @@ def _xyz_to_rgb(x: float, y: float, z: float) -> Tuple[float, float, float]:
     )
 
 
-def _luv_to_xyz(l: float, u: float, v: float) -> Tuple[float, float, float]:
+def _luv_to_xyz(l: float, u: float, v: float) -> tuple[float, float, float]:
     if l <= 0.0:
         return (0.0, 0.0, 0.0)
     var_u = u / (13 * l) + _REF_U
@@ -116,14 +116,14 @@ def _luv_to_xyz(l: float, u: float, v: float) -> Tuple[float, float, float]:
     return (x, y, z)
 
 
-def _lch_to_luv(l: float, c: float, h: float) -> Tuple[float, float, float]:
+def _lch_to_luv(l: float, c: float, h: float) -> tuple[float, float, float]:
     hrad = _radians(h)
     u = _cos(hrad) * c
     v = _sin(hrad) * c
     return (l, u, v)
 
 
-def _hsluv_to_lch(h: float, s: float, l: float) -> Tuple[float, float, float]:
+def _hsluv_to_lch(h: float, s: float, l: float) -> tuple[float, float, float]:
     if l > 100.0 - 1e-7:
         return (100.0, 0.0, h)
     if l < 1e-08:
@@ -133,11 +133,11 @@ def _hsluv_to_lch(h: float, s: float, l: float) -> Tuple[float, float, float]:
     return (l, c, h)
 
 
-def _lch_to_rgb(l: float, c: float, h: float) -> Tuple[float, float, float]:
+def _lch_to_rgb(l: float, c: float, h: float) -> tuple[float, float, float]:
     return _xyz_to_rgb(*_luv_to_xyz(*_lch_to_luv(l, c, h)))
 
 
-def _luv_to_lch(l: float, u: float, v: float) -> Tuple[float, float, float]:
+def _luv_to_lch(l: float, u: float, v: float) -> tuple[float, float, float]:
     c = _hypot(u, v)
     if c < 1e-08:
         h = 0.0
@@ -149,7 +149,7 @@ def _luv_to_lch(l: float, u: float, v: float) -> Tuple[float, float, float]:
     return (l, c, h)
 
 
-def _rgb_to_xyz(r: float, g: float, b: float) -> Tuple[float, float, float]:
+def _rgb_to_xyz(r: float, g: float, b: float) -> tuple[float, float, float]:
     rgbl = (
         _to_linear(r),
         _to_linear(g),
@@ -162,7 +162,7 @@ def _rgb_to_xyz(r: float, g: float, b: float) -> Tuple[float, float, float]:
     )
 
 
-def _xyz_to_luv(x: float, y: float, z: float) -> Tuple[float, float, float]:
+def _xyz_to_luv(x: float, y: float, z: float) -> tuple[float, float, float]:
     l = _y_to_l(y)
     if l == 0:
         return (0.0, 0.0, 0.0)
@@ -177,11 +177,11 @@ def _xyz_to_luv(x: float, y: float, z: float) -> Tuple[float, float, float]:
     return (l, u, v)
 
 
-def _rgb_to_lch(r: float, g: float, b: float) -> Tuple[float, float, float]:
+def _rgb_to_lch(r: float, g: float, b: float) -> tuple[float, float, float]:
     return _luv_to_lch(*_xyz_to_luv(*_rgb_to_xyz(r, g, b)))
 
 
-def _lch_to_hsluv(l: float, c: float, h: float) -> Tuple[float, float, float]:
+def _lch_to_hsluv(l: float, c: float, h: float) -> tuple[float, float, float]:
     if l > 100 - 1e-7:
         return (h, 0.0, 100)
     if l < 1e-08:
@@ -194,8 +194,9 @@ def _lch_to_hsluv(l: float, c: float, h: float) -> Tuple[float, float, float]:
 
 # Hex-code functions (for convenience).
 
-def _hexcode_to_rgb(hexcode: str) -> Tuple[float, float, float]:
-    return tuple(int(hexcode[i:i + 2], 16) / 255.0 for i in (0, 2, 4))
+def _hexcode_to_rgb(hexcode: str) -> tuple[float, float, float]:
+    # MYPY doesn't detect this as having 3 values, ignore type.
+    return tuple(int(hexcode[i:i + 2], 16) / 255.0 for i in (0, 2, 4))  # type: ignore
 
 
 def _hexcode_from_rgb(r: float, g: float, b: float) -> str:
@@ -208,12 +209,12 @@ def _hexcode_from_rgb(r: float, g: float, b: float) -> str:
 
 # Public RGB Functions.
 
-def hsluv_to_rgb(h: float, s: float, l: float) -> Tuple[float, float, float]:
+def hsluv_to_rgb(h: float, s: float, l: float) -> tuple[float, float, float]:
     """ HSL-UV to RGB, where: H [0..360], S [0..100], L [0..100]. """
     return _lch_to_rgb(*_hsluv_to_lch(float(h), float(s), float(l)))
 
 
-def hsluv_from_rgb(r: float, g: float, b: float) -> Tuple[float, float, float]:
+def hsluv_from_rgb(r: float, g: float, b: float) -> tuple[float, float, float]:
     """ RGB to USL-UV where: R,G,B are between 0 and 1.0. """
     return _lch_to_hsluv(*_rgb_to_lch(r, g, b))
 
@@ -224,5 +225,5 @@ def hsluv_to_hexcode(h: float, s: float, l: float) -> str:
     return _hexcode_from_rgb(*hsluv_to_rgb(h, s, l))
 
 
-def hsluv_from_hexcode(hexcode: str) -> Tuple[float, float, float]:
+def hsluv_from_hexcode(hexcode: str) -> tuple[float, float, float]:
     return hsluv_from_rgb(*_hexcode_to_rgb(hexcode))
